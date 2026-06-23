@@ -133,7 +133,7 @@ WHERE ( created_at >= '2026-01-01' and status <> 'cancelled' )
 6. Snapshot workers read table ranges in parallel.
 7. Rows are sent through the same Redis command mapping as inserts.
 8. pg2redis waits until all snapshot Redis writes are acknowledged.
-9. The completed snapshot LSN is saved in Redis as `pgwalk:snapshot_lsn:<app_name>`.
+9. The completed snapshot LSN is saved in Redis as `pgwalk:snapshot_lsn:pg2redis`.
 10. If the mode is not `onetime_only`, pg2redis starts logical replication from the snapshot LSN or from a later saved stream LSN.
 
 ## Snapshot State Table
@@ -196,7 +196,7 @@ pg2redis also logs snapshot statistics at `statsInterval`, including pending, in
 
 ## Restart and Retry Behavior
 
-For `onetime` mode, pg2redis first checks Redis key `pgwalk:snapshot_lsn:<app_name>`.
+For `onetime` mode, pg2redis first checks Redis key `pgwalk:snapshot_lsn:pg2redis`.
 
 - If the key exists and contains a valid LSN, pg2redis skips the snapshot.
 - If the key is missing, pg2redis checks `pgwalk.snapshot_state`.

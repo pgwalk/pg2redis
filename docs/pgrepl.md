@@ -273,7 +273,7 @@ pg2redis_lsn
 Completed snapshot LSN state is stored in Redis key:
 
 ```text
-pgwalk:snapshot_lsn:<app_name>
+pgwalk:snapshot_lsn:pg2redis
 ```
 
 pg2redis also attempts to create `pgwalk.app_state` in Postgres:

@@ -23,7 +23,7 @@ Start the stack:
 docker compose up --build
 ```
 
-Compose pulls `alikpgwalk/pg2redis:0.4.2` from Docker Hub and builds only the
+Compose pulls `alikpgwalk/pg2redis:latest` from Docker Hub and builds only the
 small example API image locally.
 
 The API is available at `http://localhost:8080`.
