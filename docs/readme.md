@@ -1,17 +1,17 @@
 # pg2redis
 
-**pg2redis** is a PostgreSQL-to-Redis streamer. It reads row-level changes from PostgreSQL logical replication and applies configured Redis commands for inserts, updates, deletes, and initial snapshots.
+**pg2redis** is a Postgres-to-Redis streamer. It reads row-level changes from Postgres logical replication and applies configured Redis commands for inserts, updates, deletes, and initial snapshots.
 
 ---
 
 ## Features
 
-- Real-time Redis updates from PostgreSQL WAL.
+- Real-time Redis updates from Postgres WAL.
 - Configurable Redis writes with templates for keys, values, hashes, streams, sorted sets, sets, and pub/sub.
 - Operation-specific command mappings for insert, update, and delete.
 - Conditional command execution based on current or previous row values.
 - Initial snapshots for loading existing table data before streaming starts.
-- PostgreSQL publication and replication slot management when the application owns replication setup.
+- Postgres publication and replication slot management when the application owns replication setup.
 - At-least-once processing with saved LSN state in Redis.
 
 ---
@@ -65,17 +65,17 @@ See [Redis commands](redis-commands.md) for supported commands, templates, condi
 
 ## Snapshots
 
-Snapshots load existing table data into Redis before logical replication streaming begins. Snapshot progress is tracked in PostgreSQL and the completed snapshot LSN is stored in Redis.
+Snapshots load existing table data into Redis before logical replication streaming begins. Snapshot progress is tracked in Postgres and the completed snapshot LSN is stored in Redis.
 
 See [Snapshots](snapshot.md) for modes, mechanics, state tables, and operational notes.
 
 ---
 
-## PostgreSQL Replication
+## Postgres Replication
 
-pg2redis uses PostgreSQL logical replication with the built-in `pgoutput` plugin.
+pg2redis uses Postgres logical replication with the built-in `pgoutput` plugin.
 
-See [Replication management](pgrepl.md) for PostgreSQL setup, slots, publications, failover notes, and permissions.
+See [Replication management](pgrepl.md) for Postgres setup, slots, publications, failover notes, and permissions.
 
 ---
 

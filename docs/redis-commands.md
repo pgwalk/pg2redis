@@ -1,6 +1,6 @@
 # Redis Commands
 
-pg2redis converts PostgreSQL row changes into Redis commands. Each configured table can define commands that run for all operations, or separate commands for inserts, updates, and deletes.
+pg2redis converts Postgres row changes into Redis commands. Each configured table can define commands that run for all operations, or separate commands for inserts, updates, and deletes.
 
 ## Basic Table Mapping
 
@@ -23,7 +23,7 @@ For predictable cleanup, define delete commands explicitly.
 
 ## Operation-Specific Commands
 
-Use `insert`, `update`, and `delete` to configure different Redis behavior for each PostgreSQL operation.
+Use `insert`, `update`, and `delete` to configure different Redis behavior for each Postgres operation.
 
 ```yaml
 tables:
@@ -81,15 +81,15 @@ A column placeholder is replaced with the current row value.
 {old:score}
 ```
 
-Previous-value placeholders read from the previous tuple when PostgreSQL provides it. If the previous value is unavailable, the placeholder expands to an empty string in command templates.
+Previous-value placeholders read from the previous tuple when Postgres provides it. If the previous value is unavailable, the placeholder expands to an empty string in command templates.
 
 ### Special placeholders
 
 ```text
-{%schema%}  PostgreSQL schema name
-{%table%}   PostgreSQL table name without schema
+{%schema%}  Postgres schema name
+{%table%}   Postgres table name without schema
 {%pk%}      joined primary key value
-{%xid%}     PostgreSQL transaction ID
+{%xid%}     Postgres transaction ID
 ```
 
 Example:
@@ -178,7 +178,7 @@ redis:
   commitTimeColumn: lastupdated
 ```
 
-This requires PostgreSQL `track_commit_timestamp` to be enabled.
+This requires Postgres `track_commit_timestamp` to be enabled.
 
 The commit time is automatically included by:
 
@@ -338,7 +338,7 @@ tables:
 
 - pg2redis validates command placeholders against publication metadata on startup.
 - Primary key columns must be available in the publication when you use `{%pk%}`.
-- For update conditions that compare against previous values, configure PostgreSQL replica identity so PostgreSQL sends the required previous columns.
+- For update conditions that compare against previous values, configure Postgres replica identity so Postgres sends the required previous columns.
 - Redis `WRONGTYPE`, unknown command, and syntax errors are treated as non-retryable downstream errors.
 - Multiple commands for a single row are atomic in Redis because they are wrapped in `MULTI` and `EXEC`.
 - Batches are flushed by size (`flushBufferSize`) or time (`flushInterval`), whichever happens first. See [Redis flush pipeline](config.md#redis-flush-pipeline) for how batch size, queue depth, and workers interact.

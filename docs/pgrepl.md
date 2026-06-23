@@ -1,14 +1,14 @@
 # Replication Management
 
-pg2redis relies on PostgreSQL logical replication. It uses publications to decide which tables and columns are available, and a logical replication slot to read changes from WAL.
+pg2redis relies on Postgres logical replication. It uses publications to decide which tables and columns are available, and a logical replication slot to read changes from WAL.
 
 pg2redis uses the built-in `pgoutput` plugin.
 
-## PostgreSQL Requirements
+## Postgres Requirements
 
-Minimum supported PostgreSQL version is 12.
+Minimum supported Postgres version is 12.
 
-Configure PostgreSQL for logical replication:
+Configure Postgres for logical replication:
 
 ```conf
 wal_level = logical
@@ -16,7 +16,7 @@ max_replication_slots = 10
 max_wal_senders = 10
 ```
 
-Restart PostgreSQL after changing these settings.
+Restart Postgres after changing these settings.
 
 If you use `redis.commitTimeColumn`, also enable:
 
@@ -24,17 +24,17 @@ If you use `redis.commitTimeColumn`, also enable:
 track_commit_timestamp = on
 ```
 
-Changing `track_commit_timestamp` requires a PostgreSQL restart.
+Changing `track_commit_timestamp` requires a Postgres restart.
 
 ## Publications
 
-A publication defines which table changes PostgreSQL sends to pg2redis.
+A publication defines which table changes Postgres sends to pg2redis.
 
 ```sql
 CREATE PUBLICATION pg2redis_pub FOR TABLE public.orders, public.customers;
 ```
 
-For PostgreSQL 15 and newer, publications can include a subset of columns:
+For Postgres 15 and newer, publications can include a subset of columns:
 
 ```sql
 CREATE PUBLICATION pg2redis_pub
@@ -72,9 +72,9 @@ In this mode pg2redis:
 - Creates the publication if it does not exist.
 - Alters the publication to match configured tables and columns.
 - Creates the logical replication slot if it does not exist.
-- Uses `publish_via_partition_root=true` for new publications on PostgreSQL 13 and newer.
+- Uses `publish_via_partition_root=true` for new publications on Postgres 13 and newer.
 
-The PostgreSQL user needs enough privileges to perform these operations.
+The Postgres user needs enough privileges to perform these operations.
 
 ## User-Owned Replication Setup
 
@@ -92,9 +92,9 @@ In this mode pg2redis validates that the publication and slot exist and that the
 
 ## Failover Slots
 
-PostgreSQL 17 added failover support for logical replication slots.
+Postgres 17 added failover support for logical replication slots.
 
-When pg2redis creates a slot and `postgres.repl.failover` is omitted, it enables failover slot creation automatically on PostgreSQL 17 or newer.
+When pg2redis creates a slot and `postgres.repl.failover` is omitted, it enables failover slot creation automatically on Postgres 17 or newer.
 
 You can also set it explicitly:
 
@@ -105,11 +105,11 @@ postgres:
     failover: true
 ```
 
-Setting `failover: true` on PostgreSQL versions older than 17 is invalid.
+Setting `failover: true` on Postgres versions older than 17 is invalid.
 
-## Multiple PostgreSQL Hosts
+## Multiple Postgres Hosts
 
-Multiple PostgreSQL hosts are used for primary discovery and failover-aware startup. Instead of pointing pg2redis at only one server, you can provide all known PostgreSQL nodes in the cluster. pg2redis connects to the configured nodes, detects which one is currently primary, and uses that primary for publication validation, snapshot queries, slot management, and logical replication.
+Multiple Postgres hosts are used for primary discovery and failover-aware startup. Instead of pointing pg2redis at only one server, you can provide all known Postgres nodes in the cluster. pg2redis connects to the configured nodes, detects which one is currently primary, and uses that primary for publication validation, snapshot queries, slot management, and logical replication.
 
 `postgres.conn.host` can be a comma-separated list of hosts:
 
@@ -133,7 +133,7 @@ The number of ports must be either one or equal to the number of hosts.
 
 ### Why use multiple hosts
 
-Use multiple hosts when PostgreSQL may be promoted from one node to another, for example in a primary/replica setup managed by Patroni, repmgr, cloud failover, or manual promotion.
+Use multiple hosts when Postgres may be promoted from one node to another, for example in a primary/replica setup managed by Patroni, repmgr, cloud failover, or manual promotion.
 
 With multiple hosts configured:
 
@@ -144,7 +144,7 @@ With multiple hosts configured:
 
 ### How primary detection works
 
-For each configured host/port pair, pg2redis opens a normal PostgreSQL connection and runs:
+For each configured host/port pair, pg2redis opens a normal Postgres connection and runs:
 
 ```sql
 select pg_is_in_recovery();
@@ -211,11 +211,11 @@ select pg_replication_slot_advance($1, $2);
 
 This is best-effort. If the replica slot advance fails, pg2redis logs the error and continues processing from the primary.
 
-Replica slot state sync is enabled only when all configured nodes are PostgreSQL 16 or newer. If any configured node is older than PostgreSQL 16, pg2redis disables replica slot sync and logs a warning.
+Replica slot state sync is enabled only when all configured nodes are Postgres 16 or newer. If any configured node is older than Postgres 16, pg2redis disables replica slot sync and logs a warning.
 
-The matching logical slot must already exist on the replica, or be maintained by PostgreSQL native slot synchronization. pg2redis does not create replica slots in this path; it only tries to advance existing slots.
+The matching logical slot must already exist on the replica, or be maintained by native Postgres slot synchronization. pg2redis does not create replica slots in this path; it only tries to advance existing slots.
 
-For PostgreSQL 17 or newer, prefer PostgreSQL's native failover logical slot support when possible. See [Failover Slots](#failover-slots).
+For Postgres 17 or newer, prefer native Postgres failover logical slot support when possible. See [Failover Slots](#failover-slots).
 
 ### Slot and publication creation during failover
 
@@ -225,21 +225,21 @@ When pg2redis starts, it detects the current primary. If `postgres.repl.owner` i
 
 During a replication reconnect, pg2redis can re-detect a newly promoted primary, but it does not run publication or slot migration again in that reconnect path. It opens a replication connection to the current primary and tries to start replication from the saved LSN.
 
-This means a standby that is promoted should already have the required publication and a usable logical slot before pg2redis relies on it as the new primary. That can be handled outside pg2redis, or by PostgreSQL native failover slot synchronization on PostgreSQL 17 or newer. If pg2redis is fully restarted after promotion and `postgres.repl.owner` is `app`, startup migration may create a missing publication or slot on the new primary, but a newly created slot starts from its own creation point and cannot replay changes that occurred before that slot existed.
+This means a standby that is promoted should already have the required publication and a usable logical slot before pg2redis relies on it as the new primary. That can be handled outside pg2redis, or by native Postgres failover slot synchronization on Postgres 17 or newer. If pg2redis is fully restarted after promotion and `postgres.repl.owner` is `app`, startup migration may create a missing publication or slot on the new primary, but a newly created slot starts from its own creation point and cannot replay changes that occurred before that slot existed.
 
 ### Limitations
 
 - Multi-host configuration is not a load-balancing feature. pg2redis streams from exactly one primary node.
-- All configured hosts must point to the same PostgreSQL cluster and database.
+- All configured hosts must point to the same Postgres cluster and database.
 - All hosts share the same configured database, user, password, and TLS settings.
 - pg2redis must be allowed through `pg_hba.conf` on every host for normal SQL connections. The current primary must also allow replication connections.
 - `postgres.repl.owner: app` creates or updates replication objects only on the primary detected during startup. It does not proactively create publications or slots on standby hosts.
 - If a promoted node does not already have a valid logical slot at the needed WAL position, pg2redis cannot recover changes that happened before a new slot is created.
-- Replica slot state sync requires PostgreSQL 16 or newer on all configured nodes and is best-effort.
+- Replica slot state sync requires Postgres 16 or newer on all configured nodes and is best-effort.
 - pg2redis does not create logical slots on replicas as part of replica slot state sync.
 - pg2redis does not stream WAL from replicas; replicas are used for discovery and best-effort slot-state advancement.
 - During failover, pg2redis can reconnect and re-detect the primary, but an in-flight replication connection can still terminate the process for some replication read errors. Run pg2redis under a supervisor or orchestrator that restarts it after failover.
-- If two configured nodes both report as primary, for example during split-brain, pg2redis uses the first primary it finds in the configured order. Fix the PostgreSQL cluster state before running pg2redis.
+- If two configured nodes both report as primary, for example during split-brain, pg2redis uses the first primary it finds in the configured order. Fix the Postgres cluster state before running pg2redis.
 
 ## Permissions
 
@@ -276,7 +276,7 @@ Completed snapshot LSN state is stored in Redis key:
 pgwalk:snapshot_lsn:<app_name>
 ```
 
-pg2redis also attempts to create `pgwalk.app_state` in PostgreSQL:
+pg2redis also attempts to create `pgwalk.app_state` in Postgres:
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS pgwalk;
@@ -298,7 +298,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON pgwalk.app_state TO pg2redis_user;
 
 ## Replica Identity
 
-Deletes and previous-value comparisons depend on what PostgreSQL includes in logical replication messages.
+Deletes and previous-value comparisons depend on what Postgres includes in logical replication messages.
 
 For tables where delete commands or `{old:column}` placeholders need non-key columns, configure replica identity:
 
@@ -311,6 +311,6 @@ Use this carefully on high-write tables because it increases WAL volume.
 ## Limitations
 
 - Logical replication can publish a change before the same change is visible on an asynchronous standby.
-- PostgreSQL versions before 15 do not support column-list publications.
-- Generated column replication has PostgreSQL-version-specific behavior. Verify generated columns before using them in Redis templates.
+- Postgres versions before 15 do not support column-list publications.
+- Generated column replication has Postgres version-specific behavior. Verify generated columns before using them in Redis templates.
 - Replication slots retain WAL until consumed; monitor disk usage and slot lag.

@@ -105,7 +105,7 @@ Interval for logging application statistics. Default is `1m`. If the value has n
 
 Retry policy for failed downstream operations.
 
-The retry policy controls what pg2redis does when a Redis write fails after a PostgreSQL change has already been read.
+The retry policy controls what pg2redis does when a Redis write fails after a Postgres change has already been read.
 
 Retryable failures are scheduled again after a backoff delay. Non-retryable Redis errors, such as `WRONGTYPE`, unknown command, and Redis syntax errors, are skipped and logged because retrying the same command is not expected to fix them.
 
@@ -225,17 +225,17 @@ When `multiplier` is `1`, pg2redis uses a linear backoff based on the retry coun
 - Use `maxConnectionRetries: 0` only when you want pg2redis to keep waiting for Redis indefinitely.
 - Keep `maxRetries` finite so bad data or command-level failures do not block WAL progress forever.
 
-## PostgreSQL Configuration, `postgres`
+## Postgres Configuration, `postgres`
 
 ### Connection settings, `postgres.conn`
 
 #### `host`, `PG2REDIS_POSTGRES_CONN_HOST`
 
-PostgreSQL host. Can be a comma-separated list of hosts. pg2redis connects to the active primary node.
+Postgres host. Can be a comma-separated list of hosts. pg2redis connects to the active primary node.
 
 #### `port`, `PG2REDIS_POSTGRES_CONN_PORT`
 
-PostgreSQL port. Can be one port for all hosts, or a comma-separated list with the same number of entries as `host`.
+Postgres port. Can be one port for all hosts, or a comma-separated list with the same number of entries as `host`.
 
 #### `database`, `PG2REDIS_POSTGRES_CONN_DATABASE`
 
@@ -286,22 +286,22 @@ When `owner` is `app`, the database user needs enough privileges to create or al
 
 #### `failover`, `PG2REDIS_POSTGRES_REPL_FAILOVER`
 
-Controls failover-enabled logical slot creation when pg2redis creates a slot. Failover slots require PostgreSQL 17 or newer. If omitted, pg2redis enables failover slot creation automatically on PostgreSQL 17 or newer.
+Controls failover-enabled logical slot creation when pg2redis creates a slot. Failover slots require Postgres 17 or newer. If omitted, pg2redis enables failover slot creation automatically on Postgres 17 or newer.
 
 ### `numericMode`, `PG2REDIS_POSTGRES_NUMERICMODE`
 
-Controls how PostgreSQL floating point and arbitrary precision numeric values are decoded before they are written to Redis.
+Controls how Postgres floating point and arbitrary precision numeric values are decoded before they are written to Redis.
 
-This setting applies to PostgreSQL `real`, `double precision`, and `numeric`/`decimal` columns. Integer columns such as `smallint`, `integer`, and `bigint` are decoded as integers regardless of `numericMode`.
+This setting applies to Postgres `real`, `double precision`, and `numeric`/`decimal` columns. Integer columns such as `smallint`, `integer`, and `bigint` are decoded as integers regardless of `numericMode`.
 
 - `float`: values are decoded as numeric values. This is the default.
-- `string`: values are decoded from the PostgreSQL text representation and preserved as strings.
+- `string`: values are decoded from the Postgres text representation and preserved as strings.
 
 Default is `float`.
 
 ### `standByTimeout`, `PG2REDIS_POSTGRES_STANDBYTIMEOUT`
 
-Standby status update interval for logical replication. If not set, pg2redis uses PostgreSQL `wal_sender_timeout`. If configured above `wal_sender_timeout`, pg2redis lowers it to `wal_sender_timeout`.
+Standby status update interval for logical replication. If not set, pg2redis uses Postgres `wal_sender_timeout`. If configured above `wal_sender_timeout`, pg2redis lowers it to `wal_sender_timeout`.
 
 ### `receiveTimeout`, `PG2REDIS_POSTGRES_RECEIVETIMEOUT`
 
@@ -349,21 +349,21 @@ If one TLS field is set, all three must be set.
 
 ### `commitTimeColumn`, `PG2REDIS_REDIS_COMMITTIMECOLUMN`
 
-Adds the PostgreSQL transaction commit time to generated Redis payloads.
+Adds the Postgres transaction commit time to generated Redis payloads.
 
-This option requires PostgreSQL `track_commit_timestamp` to be enabled. You can enable it with:
+This option requires Postgres `track_commit_timestamp` to be enabled. You can enable it with:
 
 ```sql
 ALTER SYSTEM SET track_commit_timestamp = ON;
 ```
 
-PostgreSQL must be restarted after changing `track_commit_timestamp`.
+Postgres must be restarted after changing `track_commit_timestamp`.
 
 For Redis command templates, the commit time is automatically included by `{pairs:*}`, `{json:*}`, and `{columns:*}`. It is not automatically added to explicit subset templates such as `{pairs:id,status}` or `{json:id,status}`.
 
 ## Table Configuration, `tables`
 
-Each table entry maps one PostgreSQL table to one or more Redis commands.
+Each table entry maps one Postgres table to one or more Redis commands.
 
 ```yaml
 tables:
@@ -557,7 +557,7 @@ Some settings also accept plain numbers:
 
 `numericMode` affects the values that pg2redis stores in the in-memory row tuple before Redis command templates are expanded.
 
-It is most visible when you use JSON templates such as `{json:*}` or `{json:price,score}`. Redis hash/set command arguments are strings by the time they are sent to Redis, but `numericMode` still controls whether pg2redis formats a decoded numeric value or preserves PostgreSQL's text value.
+It is most visible when you use JSON templates such as `{json:*}` or `{json:price,score}`. Redis hash/set command arguments are strings by the time they are sent to Redis, but `numericMode` still controls whether pg2redis formats a decoded numeric value or preserves the text value Postgres sends.
 
 ### `float`
 
@@ -566,7 +566,7 @@ It is most visible when you use JSON templates such as `{json:*}` or `{json:pric
 In this mode:
 
 - `real` and `double precision` are decoded as floating point values.
-- `numeric` and `decimal` are decoded as PostgreSQL numeric values and are emitted as JSON numbers.
+- `numeric` and `decimal` are decoded as Postgres numeric values and are emitted as JSON numbers.
 - `NaN` is emitted as `null` in JSON.
 - `Infinity` for `real`/`double precision` is emitted as the largest representable float value in JSON.
 - `-Infinity` for `real`/`double precision` is emitted as the smallest positive non-zero float value in JSON.
@@ -622,7 +622,7 @@ In this mode:
 
 - `real`, `double precision`, `numeric`, and `decimal` are decoded as strings.
 - Integer columns remain JSON numbers.
-- `NaN`, `Infinity`, and `-Infinity` are preserved as strings when PostgreSQL sends them for the affected types.
+- `NaN`, `Infinity`, and `-Infinity` are preserved as strings when Postgres sends them for the affected types.
 
 Configuration:
 
@@ -710,7 +710,7 @@ Redis receives field/value pairs like:
 HSET product_prices:1 id 1 price 1.2300000000 rating 4.5 distance 100.125 quantity 7
 ```
 
-Redis stores hash values as strings, so `numericMode` is less visible for hashes than for JSON payloads. Use `string` mode when you want PostgreSQL's text representation preserved before pg2redis formats Redis command arguments.
+Redis stores hash values as strings, so `numericMode` is less visible for hashes than for JSON payloads. Use `string` mode when you want the text representation from Postgres preserved before pg2redis formats Redis command arguments.
 
 ### Condition and diff behavior
 
@@ -727,6 +727,6 @@ tables:
             value: "100.00"
 ```
 
-For equality conditions in `string` mode, use the exact text representation PostgreSQL sends. For example, a `numeric(20,10)` value may appear as `"1.2300000000"`, not `"1.23"`.
+For equality conditions in `string` mode, use the exact text representation Postgres sends. For example, a `numeric(20,10)` value may appear as `"1.2300000000"`, not `"1.23"`.
 
 `{diff:column}` converts values to floats internally, so it is useful for counters and approximate score changes, not for exact decimal arithmetic.

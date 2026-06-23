@@ -1,10 +1,10 @@
 # Snapshots
 
-Snapshots load existing PostgreSQL table data into Redis before pg2redis starts streaming new WAL changes.
+Snapshots load existing Postgres table data into Redis before pg2redis starts streaming new WAL changes.
 
 Snapshots are useful when:
 
-- Redis starts empty and must be initialized from PostgreSQL.
+- Redis starts empty and must be initialized from Postgres.
 - A new table mapping is added for a table that already contains data.
 - WAL history is no longer available for the desired starting point.
 
@@ -54,7 +54,7 @@ Target number of rows per snapshot chunk. Default is `1000`.
 
 Number of snapshot workers. Default is `1`.
 
-Snapshot workers read PostgreSQL ranges in parallel and submit Redis writes through a dedicated snapshot listener.
+Snapshot workers read Postgres ranges in parallel and submit Redis writes through a dedicated snapshot listener.
 
 ### `abortOnError`, `PG2REDIS_SNAPSHOT_ABORTONERROR`
 
@@ -123,9 +123,9 @@ WHERE ( created_at >= '2026-01-01' and status <> 'cancelled' )
 
 ## How Snapshots Work
 
-1. pg2redis validates the PostgreSQL publication, replication slot, table mappings, and Redis connection.
+1. pg2redis validates the Postgres publication, replication slot, table mappings, and Redis connection.
 2. If `postgres.repl.owner` is `app`, pg2redis creates or updates the publication and creates the replication slot if needed.
-3. pg2redis prepares a consistent PostgreSQL snapshot:
+3. pg2redis prepares a consistent Postgres snapshot:
    - If a new replication slot was created by pg2redis, it uses the exported slot snapshot.
    - Otherwise it opens a repeatable-read, read-only transaction and calls `pg_export_snapshot()`.
 4. pg2redis records the snapshot WAL LSN.
@@ -138,7 +138,7 @@ WHERE ( created_at >= '2026-01-01' and status <> 'cancelled' )
 
 ## Snapshot State Table
 
-pg2redis stores snapshot progress in PostgreSQL:
+pg2redis stores snapshot progress in Postgres:
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS pgwalk;
@@ -170,7 +170,7 @@ Valid statuses are:
 - `completed`
 - `failed`
 
-The application creates this table automatically, but the PostgreSQL user must have permission to create schema/table objects or the table must be created ahead of time.
+The application creates this table automatically, but the Postgres user must have permission to create schema/table objects or the table must be created ahead of time.
 
 ## Monitoring Progress
 
@@ -210,7 +210,7 @@ This means a partially completed snapshot can be resumed at table granularity. I
 
 ## Snapshot Planning
 
-pg2redis uses PostgreSQL table estimates and CTID ranges to split large tables into chunks.
+pg2redis uses Postgres table estimates and CTID ranges to split large tables into chunks.
 
 For full snapshots, it scans CTID ranges across the table.
 
@@ -220,7 +220,7 @@ For query snapshots:
 - Sparse filtered snapshots can first read CTID bounds for matching rows.
 - Larger filtered snapshots use CTID ranges with the configured `WHERE` clause.
 
-The `batchSize` value is a target row count. Actual rows per batch can vary because PostgreSQL CTID ranges are block-based.
+The `batchSize` value is a target row count. Actual rows per batch can vary because Postgres CTID ranges are block-based.
 
 ## Redis Commands During Snapshot
 
@@ -245,10 +245,10 @@ If `insert.commands` is not configured, pg2redis uses the table-level `commands`
 
 ## Operational Notes
 
-- Snapshot tables must be present in the PostgreSQL publication.
+- Snapshot tables must be present in the Postgres publication.
 - Columns referenced by Redis command templates and conditions must be present in publication metadata.
 - Use `onetime_only` to pre-load Redis without leaving a streaming process running.
-- Large snapshots hold a consistent PostgreSQL snapshot open until the snapshot finishes. Monitor WAL retention and long-running transactions.
+- Large snapshots hold a consistent Postgres snapshot open until the snapshot finishes. Monitor WAL retention and long-running transactions.
 - For filtered snapshots, the `query` string is used directly as SQL. Keep it deterministic and test it before running in production.
 - If Redis writes fail, inspect `error_message` in `pgwalk.snapshot_state`.
 - To force `onetime` mode to enter the snapshot phase again, clear the Redis snapshot LSN key.
