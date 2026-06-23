@@ -51,8 +51,8 @@ services:
 
   api:
     build:
-      context: ../..
-      dockerfile: example/pg-redis/api/Dockerfile
+      context: ./api
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/shop?sslmode=disable
       REDIS_ADDR: redis:6379
