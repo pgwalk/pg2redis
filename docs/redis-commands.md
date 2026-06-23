@@ -273,6 +273,8 @@ tables:
 
 When more than one Redis command is produced for a row change, pg2redis wraps the commands in Redis `MULTI` and `EXEC`.
 
+This Redis transaction is scoped to the commands generated for that one row change. It is not a Redis transaction for the whole Postgres transaction.
+
 ## Common Patterns
 
 ### Hash Per Row
@@ -341,4 +343,6 @@ tables:
 - For update conditions that compare against previous values, configure Postgres replica identity so Postgres sends the required previous columns.
 - Redis `WRONGTYPE`, unknown command, and syntax errors are treated as non-retryable downstream errors.
 - Multiple commands for a single row are atomic in Redis because they are wrapped in `MULTI` and `EXEC`.
+- Postgres transaction boundaries are preserved for WAL progress tracking, but not as one atomic Redis transaction. A single Postgres transaction can share a Redis batch with other transactions, or if it is large enough it can be split across more than one Redis batch.
+- Ordering is not guaranteed when an entry is retried. Retryable failures are scheduled for later and can be applied after newer WAL entries. Prefer idempotent command mappings where possible, and be careful with commands that create side effects such as `INCRBY`, `ZINCRBY`, `XADD`, and `PUBLISH`.
 - Batches are flushed by size (`flushBufferSize`) or time (`flushInterval`), whichever happens first. See [Redis flush pipeline](config.md#redis-flush-pipeline) for how batch size, queue depth, and workers interact.

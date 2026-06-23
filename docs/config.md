@@ -72,7 +72,19 @@ In practical terms:
 - Decrease `flushBufferSize` or `flushInterval` to reduce latency. This usually increases Redis round trips.
 - Increase `flushQueueDepth` to absorb short bursts before back-pressure starts. This does not change the size of a Redis batch.
 - Increase `flushWorkers` when Redis and the network can handle multiple concurrent pipelines.
-- Use `flushWorkers: 1` when strict Redis write ordering across batches is required for the same keys.
+- Use `flushWorkers: 1` when best-effort Redis batch ordering is important for the same keys.
+
+#### Ordering and transaction boundaries
+
+`flushWorkers` controls how many Redis pipeline batches can be executed at the same time. With `flushWorkers > 1`, more than one batch can be in flight, so a later batch can finish before an earlier batch. With `flushWorkers: 1`, normal batch execution is single-worker and FIFO, but this is not a total ordering guarantee.
+
+Right now, ordering is not guaranteed when an entry is retried. The retry tracker schedules failed entries for later and re-enqueues them as smaller write requests, usually one failed row entry at a time. Later WAL entries may already have been flushed to Redis before the retry is applied. Prefer idempotent writes such as `HSET`, `SADD`, `ZADD`, and `DEL` for derived state. Be careful with `INCRBY`, `ZINCRBY`, `XADD`, and `PUBLISH` if delayed or duplicate application would be a problem.
+
+Postgres transaction boundaries are preserved for WAL progress tracking, not for Redis atomicity. The logical replication listener collects row changes by XID and sends one write request after the Postgres commit. That request carries one LSN, XID, and commit time, and the application does not release that commit point until all row entries are acknowledged or skipped. The Redis writer, however, enqueues those row entries individually and batches them by `flushBufferSize` or `flushInterval`. A single Postgres transaction can share a Redis batch with other transactions, or if it is large enough it can be split across more than one Redis batch.
+
+For one row change, multiple configured Redis commands are wrapped in `MULTI` and `EXEC`. The entire Postgres transaction is not wrapped in one Redis `MULTI`/`EXEC`.
+
+Stronger ordering guarantees and better preservation of Postgres transaction boundaries are work in progress and will be addressed in future versions.
 
 For example, with:
 
@@ -108,6 +120,8 @@ Retry policy for failed downstream operations.
 The retry policy controls what pg2redis does when a Redis write fails after a Postgres change has already been read.
 
 Retryable failures are scheduled again after a backoff delay. Non-retryable Redis errors, such as `WRONGTYPE`, unknown command, and Redis syntax errors, are skipped and logged because retrying the same command is not expected to fix them.
+
+Retries are entry-level, not full-transaction replays. When a Redis batch fails, failed entries are reported back to the application. Retryable entries are scheduled for a later attempt and may be sent after newer WAL entries have already been applied. See [Ordering and transaction boundaries](#ordering-and-transaction-boundaries) for the ordering implications.
 
 If `retryPolicy` is not configured, pg2redis does not schedule delayed retries.
 
