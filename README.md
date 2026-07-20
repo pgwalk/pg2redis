@@ -2,6 +2,7 @@
 
 **pg2redis** is a Postgres-to-Redis streamer. It reads row-level changes from Postgres logical replication and applies configured Redis commands for inserts, updates, deletes, and initial snapshots.
 
+[Stream Postgres WAL to Redis: Real-Time Read Models with pg2redis](https://medium.com/@alik-pgwalk/stream-postgres-wal-to-redis-real-time-read-models-with-pg2redis-922c75886a02)
 ---
 
 ## Features
