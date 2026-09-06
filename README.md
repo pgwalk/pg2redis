@@ -1,4 +1,4 @@
-# pg2redis
+# pg2redis (BETA)
 
 **pg2redis** is a Postgres-to-Redis streamer. It reads row-level changes from Postgres logical replication and applies configured Redis commands for inserts, updates, deletes, and initial snapshots.
 
